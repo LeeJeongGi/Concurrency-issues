@@ -56,7 +56,11 @@ class StockServiceTest {
 
         for (int i = 0; i < threadCount; i++) {
             executorService.submit(() -> {
-                stockService.decrease(1L, 1L);
+                try {
+                    stockService.decrease(1L, 1L);
+                } finally {
+                    latch.countDown();
+                }
             });
         }
 
