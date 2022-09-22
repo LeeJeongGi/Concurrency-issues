@@ -1,4 +1,4 @@
-package com.example.stock.service;
+package com.example.stock.facade;
 
 import com.example.stock.domain.Stock;
 import com.example.stock.repository.StockRepository;
@@ -12,13 +12,13 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
-class StockServiceTest {
+class OptimisticLockStockFacadeTest {
 
     @Autowired
-    private PessimisticLockStockService stockService;
+    private OptimisticLockStockFacade optimisticLockStockFacade;
 
     @Autowired
     private StockRepository stockRepository;
@@ -36,16 +36,6 @@ class StockServiceTest {
     }
 
     @Test
-    public void stock_decrease() {
-        stockService.decrease(1L, 1L);
-
-        // 100 - 1 = 99
-        Stock stock = stockRepository.findById(1L).orElseThrow();
-
-        assertEquals(99, stock.getQuantity());
-    }
-
-    @Test
     public void 동시에_100개의_요청() throws InterruptedException {
         int threadCount = 100;
 
@@ -57,7 +47,9 @@ class StockServiceTest {
         for (int i = 0; i < threadCount; i++) {
             executorService.submit(() -> {
                 try {
-                    stockService.decrease(1L, 1L);
+                    optimisticLockStockFacade.decrease(1L, 1L);
+                } catch (InterruptedException e) {
+                    throw new RuntimeException(e);
                 } finally {
                     latch.countDown();
                 }
@@ -72,4 +64,5 @@ class StockServiceTest {
         // 100 - (1 * 100) = 0 -> 예상 작업
         assertEquals(0L, stock.getQuantity());
     }
+
 }
